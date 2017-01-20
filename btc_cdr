@@ -1,0 +1,53 @@
+#!/bin/bash
+
+HOST=10.247.221.16
+
+# GET EWSD data
+
+ftp $HOST < ~/ftp1.cmd > /tmp/ftp.list
+#wget --quiet -O - ftp://10.247.221.16/city/ | tail -n+11 | head -n-3 | awk -e '{print $7}' | grep AMA | tr -d \" | tr -d "</a>" | sed -e "s/^.*gzAMA/AMA/" > /tmp/ftp.list
+
+sleep 15
+
+cat /tmp/ftp.list | awk '{print $4}' > /tmp/files.list
+diff ~/ewsd.list /tmp/files.list | grep ">" | awk '{print $2}' >  /tmp/diff.list
+FILES=`cat /tmp/diff.list`
+
+for i in $FILES
+do
+  cd /ftproot/btc_cdr/ewsd
+  wget -q ftp://10.247.221.16/city/$i
+  gzip -d $i
+  j=`echo $i | sed -e 's|\.gz||'`
+  /usr/local/bin/ewsd_parce $j $j.csv > /dev/null
+  rm -f $j
+done
+
+mv -f ~/ewsd.list ~/ewsd.list~
+mv -f /tmp/files.list ~/ewsd.list
+
+# GET AXE data
+
+ftp $HOST < ~/ftp2.cmd > /tmp/ftp.list
+#wget --quiet -O - ftp://10.247.221.16/city/ | tail -n+11 | head -n-3 | awk -e '{print $7}' | grep i17 | tr -d \" | tr -d "</a>" | sed -e "s/^.*gzi17/i17/" > /tmp/ftp.list
+
+sleep 15
+
+cat /tmp/ftp.list | awk '{print $4}' > /tmp/files.list
+diff ~/axe.list /tmp/files.list | grep ">" | awk '{print $2}' >  /tmp/diff.list
+FILES=`cat /tmp/diff.list`
+
+for i in $FILES
+do
+  cd /ftproot/btc_cdr/axe
+  wget -q ftp://10.247.221.16/city/$i
+  gzip -d $i
+  j=`echo $i | sed -e 's|\.gz||'`
+  /usr/local/bin/axe_parce $j $j.csv > /dev/null
+  rm -f $j
+done
+
+mv -f ~/axe.list ~/axe.list~
+mv -f /tmp/files.list ~/axe.list
+
+rm -f /tmp/ftp.list /tmp/files.list /tmp/diff.list
