@@ -1,17 +1,19 @@
 #!/bin/bash
 
 DD=`date "+%d" -d yesterday`
-#DD=15
+#DD=25
 MM=`date "+%m" -d yesterday`
 YY=`date "+%Y" -d yesterday`
+
 TMPCSV=/tmp/cdr_$YY.$MM.$DD.csv
 RESCSV=/ftproot/btc_cdr/fraud/fraud-$YY.$MM.$DD.csv
-INPCSV=/ftproot/tcg/Report9855_$YY$MM$(($DD+1))*
+INPCSV=/ftproot/tcg/Report9855_$YY$MM$(date "+%d")*
 
 rm -f $TMPCSV
 rm -f /tmp/frod-$YY.$MM.$DD.csv
 rm -f $RESCSV
-#touch $RESCSV
+
+install -m 644 /dev/null $RESCSV
 echo "Timestamp;Operator A;A1-number;Operator B;B-number;;;;" > $RESCSV
 
 cat /ftproot/btc_cdr/axe/i170002_$YY$MM$DD* >> $TMPCSV
@@ -37,14 +39,14 @@ do
       then
         case ${A1s[$i]} in
           37533*|37529[2578]* )   AOP="МТС";;
-          37544*|37529[13469]* )  AOP="Velcom";;
-          37525* )                AOP="Life";;
+  		    37544*|37529[13469]* )  AOP="Velcom";;
+  			  37525* )                AOP="Life";;
           790[0248]*|795[123]* )  AOP="TELE2";;
           797* )                  AOP="TELE2";;
           790[3569]*|796* )       AOP="BeeLine";;
           791* )                  AOP="MTC-RU";;
           792* )                  AOP="Мегафон";;
-          375* )                  AOP="Белтелеком";;
+  				375* )                  AOP="Белтелеком";;
           * )                     AOP="";;
   			esac
         case ${Bs[$i]} in
@@ -61,3 +63,4 @@ done
 
 rm -f $TMPCSV
 echo ""
+echo "Done"
