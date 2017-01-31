@@ -14,7 +14,7 @@ rm -f /tmp/frod-$YY.$MM.$DD.csv
 rm -f $RESCSV
 
 install -m 644 /dev/null $RESCSV
-echo "Timestamp;Operator A;A1-number;Operator B;B-number;;;;" > $RESCSV
+echo "Timestamp;Operator A;A1-number;Operator B;B-number;" > $RESCSV
 
 cat /ftproot/btc_cdr/axe/i170002_$YY$MM$DD* >> $TMPCSV
 cat /ftproot/btc_cdr/ewsd/AMA.$YY-$MM-$DD* >> $TMPCSV
