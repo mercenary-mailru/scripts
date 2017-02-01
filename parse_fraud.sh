@@ -7,7 +7,7 @@ YY=`date "+%Y" -d yesterday`
 
 TMPCSV=/tmp/cdr_$YY.$MM.$DD.csv
 RESCSV=/ftproot/btc_cdr/fraud/fraud-$YY.$MM.$DD.csv
-INPCSV=/ftproot/tcg/Report9855_$YY$MM$(date "+%d")*
+INPCSV=/ftproot/tcg/Report9855_$(date "+%Y%m%d")*
 
 rm -f $TMPCSV
 rm -f /tmp/frod-$YY.$MM.$DD.csv
