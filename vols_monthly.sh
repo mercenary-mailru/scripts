@@ -8,6 +8,7 @@ DB_name=vols
 date_after=`date "+%Y-%m"`-01
 date_before=`date "+%Y-%m" -d "-1 month"`-01
 
+# 
 req_eks="\\copy ( 
   SELECT exploit_declaration.id, commitee.name
      AS \"Исполком\", region.name
