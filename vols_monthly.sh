@@ -33,8 +33,8 @@ req_eks="\\copy (
 
 req_eks_isp="\\copy (
   SELECT commitee.name
-    AS \"Исполком\", COUNT(commitee.name)
-    AS \"Кол-во\",
+    AS \"Исполком\",
+    COUNT(commitee.name) AS \"Кол-во\",
     CASE WHEN exploit_declaration.archive
       THEN 'Да' ELSE 'Нет' END
     AS \"Помещено в архив\"
@@ -72,10 +72,8 @@ req_proj="\\copy (
   WITH (FORMAT CSV, HEADER TRUE, FORCE_QUOTE *)"
 
 req_proj_isp="\\copy (
-  SELECT commitee.name
-    AS \"Исполком\",
-    COUNT(commitee.name)
-    AS \"Кол-во\",
+  SELECT commitee.name AS \"Исполком\",
+    COUNT(commitee.name) AS \"Кол-во\",
     CASE WHEN project_declaration.archive
       THEN 'Да' ELSE 'Нет' END
     AS \"Помещено в архив\"
@@ -89,6 +87,31 @@ req_proj_isp="\\copy (
   TO '/tmp/заявки_проктирование_исполкомы.csv'
   WITH (FORMAT CSV, HEADER TRUE, FORCE_QUOTE *)"
 
+req_fibers_l="\\copy (
+  SELECT 
+    r.object_number || '-' || rp.order_ AS \"ID\",
+    rp.fiber_count_to_rent AS \"fiber_count\",
+    sp.lattitude AS \"sp_lat\", sp.longtitude AS \"sp_lon\", sp.point_region_name AS \"sp_region\", sp.point_territory_name AS \"sp_town\",
+    sp.point_street_name AS \"sp_street\", sp.point_house_number AS \"sp_house\",
+    ep.lattitude AS \"ep_lat\", ep.longtitude AS \"ep_lon\", ep.point_region_name AS \"ep_region\", ep.point_territory_name AS \"ep_town\",
+    ep.point_street_name AS \"ep_street\", ep.point_house_number AS \"ep_house\"
+    FROM route_part rp 
+      LEFT JOIN route r ON rp.route_id = r.id
+      LEFT JOIN exploit_declaration ed ON ((rp.exploit_declaration_id = ed.id AND r.exploit_declaration_id IS NOT NULL) OR (r.exploit_declaration_id = ed.id AND rp.exploit_declaration_id IS NULL))
+      LEFT JOIN point sp ON rp.start_point_id = sp.id
+      LEFT JOIN point ep ON rp.end_point_id = ep.id
+      LEFT JOIN 
+        (SELECT ca1.id, ca1.ncot_decision_date, d.name AS ncot_decision_name FROM comissioning_acceptance  ca1
+         LEFT JOIN decision d ON d.id = ca1.ncot_decision_id
+        ) ca ON ca.id = ed.comissioning_acceptance_id
+      WHERE ed.register_date >= '"$date_before"' AND ed.register_date < '"$date_after"' AND (NOT ed.archive OR ed.archive IS NULL) AND rp.imported IS NOT NULL
+      AND ((rp.fiber_count_leased > 0 AND rp.fiber_count_to_rent > 0) OR (rp.fiber_count_leased = 0 AND rp.fiber_count_to_rent > 0))
+      AND ca.ncot_decision_name LIKE 'Согласова%'
+    ORDER BY ed.id
+  )
+  TO '/tmp/волокна_аренда.csv'
+  WITH (FORMAT CSV, HEADER TRUE, FORCE_QUOTE *)"
+
 # Connect to server
 ssh fcdb@10.72.143.250 -f -N -L 5432:127.0.0.1:5432
 #PID=$!
@@ -98,8 +121,9 @@ psql -h 127.0.0.1 -p 5432 -U postgres vols -c "$req_eks"
 psql -h 127.0.0.1 -p 5432 -U postgres vols -c "$req_eks_isp"
 psql -h 127.0.0.1 -p 5432 -U postgres vols -c "$req_proj"
 psql -h 127.0.0.1 -p 5432 -U postgres vols -c "$req_proj_isp"
+psql -h 127.0.0.1 -p 5432 -U postgres vols -c "$req_fibers_l"
 
 # Cleanup
 #lsof -ti:5432
 #kill -9 $PID
-kill -9 `lsof -ti:5432`
+kill -9 $(lsof -ti:5432)
