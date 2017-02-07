@@ -2,9 +2,24 @@
 
 # $1 - наши данные csv
 # $2 - данные ОПСОСа
-file1=/tmp/1.csv
-file2=/tmp/2.csv
-file3=/tmp/3.csv
+
+if [ ! $# == 2 ]; then
+  echo "Usage: $0 \"TCG data\" \"COp data\""
+  exit 1
+fi
+
+if [ ! -f $1 ]; then 
+  echo "File $1 does not exist"
+  exit 1
+fi
+
+if [ ! -f $2 ]; then
+  echo "File $2 does not exist"
+  exit 1
+fi
+
+file1=$1
+file2=$2
 
 # Коды для errorText
 RCode=( SYSERR 
@@ -50,32 +65,44 @@ RString=( "Response code 603"
 "unknown result array 'RTP_SendAudio'" )
 
 COUNT=$((${#RString[@]}-1))
-# echo "$string" | grep -i "$substring" >/dev/null; then
 
-# Читаем наши данные построчно
+echo "TYPE;;Date;A_NUMBER;B_NUMBER;Duration;REDIR_NUMBER;REDIR_IMSI;msisdn;HOUR;CHECK;TestCaseID"
+
+# Читаем наши данные построчно со второй строки
+not1=0
 while read line
 do
+  if [ $not1 -eq 0 ] ; then not1=1; continue ; fi
   ANum=`echo $line | cut -s -d ';' -f 4`
   BNum=`echo $line | cut -s -d ';' -f 9`
   CTime=`echo $line | cut -s -d ';' -f 3 | cut -s -d ' ' -f 2 | cut -s -d ':' -f 1-2`
-  OStr=$(cat $file2 | grep $ANum | grep $BNum | grep $CTime | cut -s -d ';' -f 7)
-#  echo $ANum ";" $BNum ";" $CTime ";" $OStr ";"
-  RES=""
-  if [ -n "$OStr" ]
-# -a "$OStr" != " " ]
+  RStr=$(cat $file2 | grep $ANum | grep $BNum ) # | grep $CTime )
+
+# Запись не найдена у оператора
+  if [ $? -ne 0 ]
   then
-    RES="NOT FOUND"
-    for i in `seq 0 $COUNT`
-      do
-#        echo "$OStr" ${RString[$i]}
-        echo "$OStr" | grep -qi "${RString[$i]}"
-        if [ $? -eq 0 ]
-        then
-          RES=${RCode[$i]}
-        fi
-      done
-  else
-    R="OK"
+    echo "$line;NOT FOUND;;"
+    continue
   fi
-  echo $ANum ";" $BNum ";" $CTime ";" $OStr ";" $RES
+
+  OStr=$(echo "$RStr" | cut -s -d ';' -f 7)
+  if [ -n "$OStr" ]                           # -a "$OStr" != " " ]
+  then
+    RES="UNKNOWN RESPONCE"
+    TestID=";"
+    for i in `seq 0 $COUNT`
+    do
+      echo "$OStr" | grep -qi "${RString[$i]}"
+      if [ $? -eq 0 ]
+      then
+        RES=${RCode[$i]}
+        TestID=${RStr:0:`expr index "$RStr" ";"`}
+        break
+      fi
+    done
+  else
+    RES="OK1" 
+    TestID=${RStr:0:`expr index "$RStr" ";"`}
+  fi
+  echo "$line;$RES;$TestID"
 done < $file1
