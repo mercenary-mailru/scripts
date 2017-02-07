@@ -75,14 +75,22 @@ do
   if [ $not1 -eq 0 ] ; then not1=1; continue ; fi
   ANum=`echo $line | cut -s -d ';' -f 4`
   BNum=`echo $line | cut -s -d ';' -f 9`
-  CTime=`echo $line | cut -s -d ';' -f 3 | cut -s -d ' ' -f 2 | cut -s -d ':' -f 1-2`
-  RStr=$(cat $file2 | grep $ANum | grep $BNum ) # | grep $CTime )
+#  CTime=`echo $line | cut -s -d ';' -f 3 | cut -s -d ' ' -f 2 | cut -s -d ':' -f 1-2`
+  CTime=`echo $line | cut -s -d ';' -f 3 | cut -s -d ':' -f 1 | sed -e 's/2017/17/'`
+  RStr=$(cat $file2 | grep $BNum | grep $ANum ) # | grep $CTime )
 
 # Запись не найдена у оператора
   if [ $? -ne 0 ]
   then
-    echo "$line;NOT FOUND;;"
-    continue
+    RStr=$(cat $file2 | grep $BNum | grep "$CTime" )
+    if [ $? -ne 0 ]
+    then
+      echo "$line;NOT FOUND;;"
+      continue
+    else
+      echo "$line;WRONG A-NUMBER;${RStr:0:`expr index "$RStr" ";"`}"
+      continue
+    fi
   fi
 
   OStr=$(echo "$RStr" | cut -s -d ';' -f 7)
