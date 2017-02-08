@@ -23,7 +23,7 @@ file2=$2
 
 # Коды для errorText
 RCode=( SYSERR 
-OK2 
+OK2
 OK2
 OK2
 OK2
@@ -66,13 +66,16 @@ RString=( "Response code 603"
 
 COUNT=$((${#RString[@]}-1))
 
-echo "TYPE;;Date;A_NUMBER;B_NUMBER;Duration;REDIR_NUMBER;REDIR_IMSI;msisdn;HOUR;CHECK;TestCaseID"
+echo "TYPE;;Date;A_NUMBER;B_NUMBER;Duration;REDIR_NUMBER;REDIR_IMSI;msisdn;HOUR;CHECK;IaA-Number;TestCaseID"
 
 # Читаем наши данные построчно со второй строки
 not1=0
 while read line
 do
   if [ $not1 -eq 0 ] ; then not1=1; continue ; fi
+
+  wrongA="OK"
+
   ANum=`echo $line | cut -s -d ';' -f 4`
   BNum=`echo $line | cut -s -d ';' -f 9`
 #  CTime=`echo $line | cut -s -d ';' -f 3 | cut -s -d ' ' -f 2 | cut -s -d ':' -f 1-2`
@@ -85,10 +88,32 @@ do
     RStr=$(cat $file2 | grep $BNum | grep "$CTime" )
     if [ $? -ne 0 ]
     then
-      echo "$line;NOT FOUND;;"
+      echo "$line;NOT FOUND;NOT FOUND;;"
       continue
     else
-      echo "$line;WRONG A-NUMBER;${RStr:0:`expr index "$RStr" ";"`}"
+      OStr=$(echo "$RStr" | cut -s -d ';' -f 7)
+      if [ -n "$OStr" ]
+      then
+        RES="Rejected"
+        wrongA="NONE"
+        TestID=${RStr:0:`expr index "$RStr" ";"`}
+        for i in 1 2 3 4 6 14 15 17 18   # OK1 & OK2
+        do
+          echo "$OStr" | grep -qi "${RString[$i]}"
+          if [ $? -eq 0 ]
+            then
+              RES=${RCode[$i]}
+              wrongA="WRONG A-NUMBER"
+              TestID=${RStr:0:`expr index "$RStr" ";"`}
+              break
+          fi
+        done
+      else
+        RES="OK1"
+        wrongA="WRONG A-NUMBER"
+        TestID=${RStr:0:`expr index "$RStr" ";"`}
+      fi
+      echo "$line;$RES;$wrongA;$TestID"
       continue
     fi
   fi
@@ -112,5 +137,5 @@ do
     RES="OK1" 
     TestID=${RStr:0:`expr index "$RStr" ";"`}
   fi
-  echo "$line;$RES;$TestID"
+  echo "$line;$RES;$wrongA;$TestID"
 done < $file1
