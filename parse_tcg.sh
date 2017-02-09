@@ -82,9 +82,23 @@ out_file=${in_file:0:$((${#in_file}-4))}_parsed.csv
 
 # Читаем наши данные построчно со второй строки
 not1=0
-while read line
+while IFS='' read -r line || [[ -n "$line" ]]
 do
-  if [ $not1 -eq 0 ] ; then not1=1; echo "$line;RESULT;DAY_HOUR;DAY;" > "$out_file" ; continue ; fi
+  if [ $not1 -eq 0 ]
+  then
+    not1=1
+    y="${line//[^;]}"
+    tabs=${#y}
+    echo "$line;RESULT;DAY_HOUR;DAY" > "$out_file"
+    continue
+  fi
+
+# Склеивание поля с переносами
+  while [ $(y="${line//[^;]}"; echo ${#y}) -lt $tabs ]
+  do
+    read line2
+    line="$line""$line2"
+  done
 
   ErrStr=`echo $line | cut -s -d ";" -f7`
   Date=`echo $line | cut -s -d ";" -f3`
@@ -110,6 +124,6 @@ do
     done
   fi
 
-  echo "$line;$RES;$Day-$Hour;$Day;" >> "$out_file"
+  echo "$line;$RES;$Day-$Hour;$Day" >> "$out_file"
 
 done < $in_file
